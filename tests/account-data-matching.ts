@@ -123,7 +123,8 @@ describe("account-data-matching", () => {
   })
 
   it("Secure withdraw", async () => {
-    console.log("minting")
+    await new Promise((x) => setTimeout(x, 1000))
+
     await spl.mintTo(
       connection,
       wallet.payer,
@@ -132,8 +133,7 @@ describe("account-data-matching", () => {
       wallet.payer,
       100
     )
-    console.log("minted")
-    await new Promise((x) => setTimeout(x, 3000))
+
     await program.methods
       .secureWithdraw()
       .accounts({
