@@ -1,0 +1,20 @@
+{
+    "name": "account-data-matching",
+    "description": "A Solana dApp template demonstrating secure account data matching with a vault system",
+    "files": [
+      "programs",
+      "tests",
+      "Anchor.toml",
+      "Cargo.toml",
+      "migrations",
+      "package.json",
+      "tsconfig.json"
+    ],
+    "gitignore": [
+      "node_modules",
+      ".anchor",
+      "target",
+      "**/*.rs.bk",
+      "dist"
+    ]
+  }
