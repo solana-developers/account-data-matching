@@ -2,7 +2,7 @@
 
 # Account Data Matching
 
-A demonstration to show importance of account checks in [account-data-matchin]https://solana.com/developers/courses/program-security/account-data-matching. This project demonstrates secure account data matching using Anchor and Solana. It implements a vault system with token management and withdrawal functionality.
+A demonstration to show importance of account checks in [account-data-matchin](https://solana.com/developers/courses/program-security/account-data-matching). This project demonstrates secure account data matching using Anchor and Solana. It implements a vault system with token management and withdrawal functionality.
 
 ```bash
 npx create-solana-dapp my-project --template account-data-matching
