@@ -1,10 +1,8 @@
-A demonstration to show importance of account checks in https://solana.com/developers/courses/program-security/account-data-matching
+# A demonstration to show importance of account checks in [account data matching course](https://solana.com/developers/courses/program-security/account-data-matching).
 
+## Account Data Matching
 
-
-# Account Data Matching
-
-A demonstration to show importance of account checks in [account-data-matchin](https://solana.com/developers/courses/program-security/account-data-matching). This project demonstrates secure account data matching using Anchor and Solana. It implements a vault system with token management and withdrawal functionality.
+A demonstration to show importance of account checks in [account-data-matching](https://solana.com/developers/courses/program-security/account-data-matching). This project demonstrates secure account data matching using Anchor and Solana. It implements a vault system with token management and withdrawal functionality.
 
 ```bash
 npx create-solana-dapp my-project --template account-data-matching
@@ -20,23 +18,27 @@ npx create-solana-dapp my-project --template account-data-matching
 ## Setup
 
 1. Clone the repository:
-   ```
+
+   ```bash
    git clone https://github.com/solana-developers/solana-account-data-matching
    cd account-data-matching
    ```
 
 2. Install dependencies:
-   ```
+
+   ```bash
    yarn install
    ```
 
 3. Build the project:
-   ```
+
+   ```bash
    anchor build
    ```
 
 4. Run tests:
-   ```
+
+   ```bash
    anchor test
    ```
 
@@ -57,6 +59,7 @@ npx create-solana-dapp my-project --template account-data-matching
 ## Usage
 
 1. Initialize the vault:
+
    ```typescript
    await program.methods.initializeVault()
      .accounts({
@@ -70,6 +73,7 @@ npx create-solana-dapp my-project --template account-data-matching
    ```
 
 2. Perform a withdrawal (ensure proper authorization):
+
    ```typescript
    await program.methods.insecureWithdraw()
      .accounts({
@@ -81,9 +85,6 @@ npx create-solana-dapp my-project --template account-data-matching
      .rpc()
    ```
 
-
 ## Contributing
 
 We welcome contributions! Please see our [Contributing Guidelines](https://github.com/solana-foundation/developer-content/blob/main/CONTRIBUTING.md) for more details.
-
->>>>>>> Stashed changes
