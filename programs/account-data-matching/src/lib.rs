@@ -1,7 +1,9 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount};
 
-declare_id!("EepFNJvKqrbMzQAGiHCwPNswD4c8ncevTXQ2tVp5f5Pb");
+declare_id!("J89xWAprDsLAAwcTA6AhrK49UMSAYJJWdXvw4ZQK4suu");
+
+pub const DISCRIMINATOR_SIZE: usize = 8;
 
 #[program]
 pub mod account_data_matching {
@@ -17,7 +19,7 @@ pub mod account_data_matching {
     pub fn insecure_withdraw(ctx: Context<InsecureWithdraw>) -> Result<()> {
         let amount = ctx.accounts.token_account.amount;
 
-        let seeds = &[b"vault".as_ref(), &[*ctx.bumps.get("vault").unwrap()]];
+        let seeds = &[b"vault".as_ref(), &[ctx.bumps.vault]];
         let signer = [&seeds[..]];
 
         let cpi_ctx = CpiContext::new_with_signer(
@@ -37,7 +39,7 @@ pub mod account_data_matching {
     pub fn secure_withdraw(ctx: Context<SecureWithdraw>) -> Result<()> {
         let amount = ctx.accounts.token_account.amount;
 
-        let seeds = &[b"vault".as_ref(), &[*ctx.bumps.get("vault").unwrap()]];
+        let seeds = &[b"vault".as_ref(), &[ctx.bumps.vault]];
         let signer = [&seeds[..]];
 
         let cpi_ctx = CpiContext::new_with_signer(
@@ -60,7 +62,7 @@ pub struct InitializeVault<'info> {
     #[account(
         init,
         payer = authority,
-        space = 8 + 32 + 32 + 32,
+        space = DISCRIMINATOR_SIZE + Vault::INIT_SPACE,
         seeds = [b"vault"],
         bump,
     )]
@@ -85,10 +87,7 @@ pub struct InitializeVault<'info> {
 
 #[derive(Accounts)]
 pub struct InsecureWithdraw<'info> {
-    #[account(
-        seeds = [b"vault"],
-        bump,
-    )]
+    #[account(seeds = [b"vault"], bump)]
     pub vault: Account<'info, Vault>,
     #[account(
         mut,
@@ -110,7 +109,6 @@ pub struct SecureWithdraw<'info> {
         has_one = token_account,
         has_one = authority,
         has_one = withdraw_destination,
-
     )]
     pub vault: Account<'info, Vault>,
     #[account(
@@ -126,8 +124,9 @@ pub struct SecureWithdraw<'info> {
 }
 
 #[account]
+#[derive(Default, InitSpace)]
 pub struct Vault {
-    token_account: Pubkey,
-    authority: Pubkey,
-    withdraw_destination: Pubkey,
+    pub token_account: Pubkey,
+    pub authority: Pubkey,
+    pub withdraw_destination: Pubkey,
 }
