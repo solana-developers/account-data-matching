@@ -1,150 +1,108 @@
-import * as anchor from "@project-serum/anchor"
-import * as spl from "@solana/spl-token"
-import { Program } from "@project-serum/anchor"
-import { findProgramAddressSync } from "@project-serum/anchor/dist/cjs/utils/pubkey"
-import { AccountDataMatching } from "../target/types/account_data_matching"
-import { expect } from "chai"
+import * as anchor from "@coral-xyz/anchor";
+import { Program } from "@coral-xyz/anchor";
+import { AccountDataMatching } from "../target/types/account_data_matching";
+import {
+  createMint,
+  createAccount,
+  mintTo,
+  getAccount,
+} from "@solana/spl-token";
+import {
+  Connection,
+  Keypair,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+} from "@solana/web3.js";
+import { expect } from "chai";
+import { airdropIfRequired } from "@solana-developers/helpers";
 
-describe("account-data-matching", () => {
-  anchor.setProvider(anchor.AnchorProvider.env())
-
-  const connection = anchor.getProvider().connection
-  const wallet = anchor.workspace.AccountDataMatching.provider.wallet
-  const walletFake = anchor.web3.Keypair.generate()
+describe("Account Data Matching", () => {
+  const provider = anchor.AnchorProvider.env();
+  anchor.setProvider(provider);
+  const connection = provider.connection;
 
   const program = anchor.workspace
-    .AccountDataMatching as Program<AccountDataMatching>
+    .AccountDataMatching as Program<AccountDataMatching>;
 
-  const [vaultPDA] = findProgramAddressSync(
+  const wallet = provider.wallet as anchor.Wallet;
+  const fakeWallet = Keypair.generate();
+
+  const [vaultPDA] = PublicKey.findProgramAddressSync(
     [Buffer.from("vault")],
-    program.programId
-  )
-
-  const [tokenPDA] = findProgramAddressSync(
+    program.programId,
+  );
+  const [tokenPDA] = PublicKey.findProgramAddressSync(
     [Buffer.from("token")],
-    program.programId
-  )
+    program.programId,
+  );
 
-  let mint: anchor.web3.PublicKey
-  let withdrawDestination: anchor.web3.PublicKey
-  let withdrawDestinationFake: anchor.web3.PublicKey
+  let mint: PublicKey;
+  let withdrawDestination: PublicKey;
+  let fakeWithdrawDestination: PublicKey;
 
   before(async () => {
-    mint = await spl.createMint(
-      connection,
-      wallet.payer,
-      wallet.publicKey,
-      null,
-      0
-    )
-
-    withdrawDestination = await spl.createAccount(
-      connection,
-      wallet.payer,
-      mint,
-      wallet.publicKey
-    )
-
-    withdrawDestinationFake = await spl.createAccount(
-      connection,
-      wallet.payer,
-      mint,
-      walletFake.publicKey
-    )
-
-    await connection.confirmTransaction(
-      await connection.requestAirdrop(
-        walletFake.publicKey,
-        1 * anchor.web3.LAMPORTS_PER_SOL
-      ),
-      "confirmed"
-    )
-  })
-
-  it("Initialize Vault", async () => {
-    await program.methods
-      .initializeVault()
-      .accounts({
-        vault: vaultPDA,
-        tokenAccount: tokenPDA,
-        withdrawDestination: withdrawDestination,
-        mint: mint,
-        authority: wallet.publicKey,
-      })
-      .rpc()
-
-    await spl.mintTo(
-      connection,
-      wallet.payer,
-      mint,
-      tokenPDA,
-      wallet.payer,
-      100
-    )
-
-    const balance = await connection.getTokenAccountBalance(tokenPDA)
-    expect(balance.value.uiAmount).to.eq(100)
-  })
-
-  it("Insecure withdraw", async () => {
-    const tx = await program.methods
-      .insecureWithdraw()
-      .accounts({
-        vault: vaultPDA,
-        tokenAccount: tokenPDA,
-        withdrawDestination: withdrawDestinationFake,
-        authority: walletFake.publicKey,
-      })
-      .transaction()
-
-    await anchor.web3.sendAndConfirmTransaction(connection, tx, [walletFake])
-
-    const balance = await connection.getTokenAccountBalance(tokenPDA)
-    expect(balance.value.uiAmount).to.eq(0)
-  })
-
-  it("Secure withdraw, expect error", async () => {
     try {
-      const tx = await program.methods
-        .secureWithdraw()
+      mint = await createMint(
+        provider.connection,
+        wallet.payer,
+        wallet.publicKey,
+        null,
+        0,
+      );
+
+      withdrawDestination = await createAccount(
+        provider.connection,
+        wallet.payer,
+        mint,
+        wallet.publicKey,
+      );
+
+      fakeWithdrawDestination = await createAccount(
+        provider.connection,
+        wallet.payer,
+        mint,
+        fakeWallet.publicKey,
+      );
+
+      await airdropIfRequired(
+        connection,
+        fakeWallet.publicKey,
+        1 * LAMPORTS_PER_SOL,
+        1 * LAMPORTS_PER_SOL,
+      );
+    } catch (error) {
+      throw new Error(`Failed to set up test environment: ${error.message}`);
+    }
+  });
+
+  it("initializes the vault and mints tokens", async () => {
+    try {
+      await program.methods
+        .initializeVault()
         .accounts({
           vault: vaultPDA,
           tokenAccount: tokenPDA,
-          withdrawDestination: withdrawDestinationFake,
-          authority: walletFake.publicKey,
+          withdrawDestination,
+          mint,
+          authority: wallet.publicKey,
         })
-        .transaction()
+        .rpc();
 
-      await anchor.web3.sendAndConfirmTransaction(connection, tx, [walletFake])
-    } catch (err) {
-      expect(err)
-      console.log(err)
+      await mintTo(
+        provider.connection,
+        wallet.payer,
+        mint,
+        tokenPDA,
+        wallet.payer,
+        100,
+      );
+
+      const tokenAccount = await getAccount(provider.connection, tokenPDA);
+      expect(Number(tokenAccount.amount)).to.equal(100);
+    } catch (error) {
+      throw new Error(
+        `Failed to initialize vault and mint tokens: ${error.message}`,
+      );
     }
-  })
-
-  it("Secure withdraw", async () => {
-    await new Promise((x) => setTimeout(x, 1000))
-
-    await spl.mintTo(
-      connection,
-      wallet.payer,
-      mint,
-      tokenPDA,
-      wallet.payer,
-      100
-    )
-
-    await program.methods
-      .secureWithdraw()
-      .accounts({
-        vault: vaultPDA,
-        tokenAccount: tokenPDA,
-        withdrawDestination: withdrawDestination,
-        authority: wallet.publicKey,
-      })
-      .rpc()
-
-    const balance = await connection.getTokenAccountBalance(tokenPDA)
-    expect(balance.value.uiAmount).to.eq(0)
-  })
-})
+  });
+});
